@@ -11,7 +11,8 @@
     <header class="hero">
       <div class="hero__badge">Trening Strzelecki</div>
       <h1>Patent Strzelecki</h1>
-      <p class="hero__lead">10 pytań losowych. Pierwsze 4 z UoBiA + bezpieczeństwa muszą być bezbłędne.</p>
+      <div class="hero__signature">Projekt: <span>NIETYPOWY</span></div>
+      <p class="hero__lead">Test 10 pytań, 20 minut. Pierwsze 4 (UoBiA + bezpieczeństwo) bezbłędnie. W pozostałych 6 dopuszczalny 1 błąd.</p>
       <div class="hero__actions">
         <button id="startBtn" class="btn btn--primary" disabled>Losuj nowy test</button>
         <button id="resetBtn" class="btn btn--ghost" disabled>Wyczyść odpowiedzi</button>
@@ -33,13 +34,7 @@
         </div>
         <div class="mode__timer" id="timerControls">
           <span>Czas:</span>
-          <select id="timeLimit">
-            <option value="10">10 min</option>
-            <option value="15">15 min</option>
-            <option value="20" selected>20 min</option>
-            <option value="25">25 min</option>
-            <option value="30">30 min</option>
-          </select>
+          <div class="timer timer--static">20 min</div>
           <div class="timer" id="timerDisplay" aria-live="polite">20:00</div>
         </div>
       </div>
@@ -48,15 +43,15 @@
     <section class="rules" aria-label="Zasady">
       <div class="rule">
         <div class="rule__title">Zasady zaliczenia</div>
-        <div class="rule__text">Pierwsze 4 pytania (UoBiA + bezpieczeństwo) muszą być poprawne. W pozostałych 6 dopuszczalny jest 1 błąd.</div>
+        <div class="rule__text">Pytania 1-4 (UoBiA + bezpieczeństwo) bezbłędnie. Pytania 5-10: dopuszczalny 1 błąd. Łącznie tylko 1 błąd.</div>
       </div>
       <div class="rule">
         <div class="rule__title">Zakres</div>
-        <div class="rule__text">Ustawa o broni i amunicji, bezpieczeństwo, regulaminy sportowe, budowa broni i amunicji.</div>
+        <div class="rule__text">Ustawa o broni i amunicji, BLOS, regulaminy strzeleckie, budowa broni, przepisy karne dotyczące broni.</div>
       </div>
       <div class="rule">
-        <div class="rule__title">Tryb</div>
-        <div class="rule__text">Jednokrotny wybór. W jednym teście pytania nie mogą się powtarzać.</div>
+        <div class="rule__title">Forma</div>
+        <div class="rule__text">Test jednokrotnego wyboru (A/B/C). Czas: 20 minut.</div>
       </div>
     </section>
 
@@ -66,6 +61,7 @@
       <section id="questionPanel" class="question-panel" hidden>
         <div class="question__meta">
           <div id="progress" class="question__number">Pytanie 1/10</div>
+          <div id="timerInline" class="question__timer">20:00</div>
         </div>
         <div id="questionText" class="question__text"></div>
         <div id="options" class="options"></div>

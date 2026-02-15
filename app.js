@@ -11,7 +11,7 @@ const state = {
   },
 };
 
-const RECENT_TESTS_LIMIT = 3;
+const RECENT_TESTS_LIMIT = 10;
 const RECENT_STORAGE_KEY = 'ps_recent_tests_v1';
 
 const startBtn = document.getElementById('startBtn');
@@ -28,8 +28,8 @@ const resultSummary = document.getElementById('resultSummary');
 const resultDetails = document.getElementById('resultDetails');
 const modeInputs = document.querySelectorAll('input[name="mode"]');
 const timerControls = document.getElementById('timerControls');
-const timeLimitSelect = document.getElementById('timeLimit');
 const timerDisplay = document.getElementById('timerDisplay');
+const timerInline = document.getElementById('timerInline');
 
 function getQuestionKey(q) {
   if (q && q.hash) return q.hash;
@@ -102,6 +102,7 @@ function updateTimerVisibility() {
   timerControls.style.pointerEvents = mode === 'exam' ? 'auto' : 'none';
   if (mode !== 'exam') {
     timerDisplay.textContent = 'bez limitu';
+    if (timerInline) timerInline.textContent = 'bez limitu';
   }
 }
 
@@ -112,7 +113,9 @@ function formatTime(seconds) {
 }
 
 function setTimerDisplay(seconds) {
-  timerDisplay.textContent = formatTime(Math.max(seconds, 0));
+  const text = formatTime(Math.max(seconds, 0));
+  timerDisplay.textContent = text;
+  if (timerInline) timerInline.textContent = text;
 }
 
 function stopTimer() {
@@ -129,9 +132,10 @@ function startTimer() {
   state.timer.mode = mode;
   if (mode !== 'exam') {
     timerDisplay.textContent = 'bez limitu';
+    if (timerInline) timerInline.textContent = 'bez limitu';
     return;
   }
-  const minutes = Number(timeLimitSelect.value || 20);
+  const minutes = 20;
   state.timer.remaining = minutes * 60;
   setTimerDisplay(state.timer.remaining);
   state.timer.running = true;
@@ -170,12 +174,13 @@ function renderCurrentQuestion() {
   questionTextEl.textContent = q.question;
   optionsEl.innerHTML = '';
 
+  const groupName = `current-${q.id || state.currentIndex}`;
   ['A', 'B', 'C'].forEach(letter => {
     const option = document.createElement('label');
     option.className = 'option';
     option.dataset.answer = letter;
     option.innerHTML = `
-      <input type="radio" name="current" value="${letter}" />
+      <input type="radio" name="${groupName}" value="${letter}" autocomplete="off" />
       <span class="option__label">${letter}</span>
       <span class="option__text">${q.answers[letter]}</span>
     `;
@@ -216,6 +221,7 @@ function startExam() {
   state.answers = {};
   state.currentIndex = 0;
 
+  document.body.classList.add('is-testing');
   questionPanel.hidden = false;
   resultEl.hidden = true;
   resetBtn.disabled = false;
@@ -228,6 +234,7 @@ function startExam() {
 function finishExam({ timeExpired = false } = {}) {
   stopTimer();
   questionPanel.hidden = true;
+  document.body.classList.remove('is-testing');
 
   const firstFour = state.selected.slice(0, 4);
   const rest = state.selected.slice(4);
@@ -237,6 +244,7 @@ function finishExam({ timeExpired = false } = {}) {
   const restCorrectCount = rest.filter(isCorrect).length;
   const restErrors = rest.length - restCorrectCount;
   const totalCorrect = state.selected.filter(isCorrect).length;
+  const totalErrors = state.selected.length - totalCorrect;
   const passed = firstFourCorrect && restErrors <= 1;
 
   resultTitle.textContent = passed ? 'Zaliczone' : 'Nie zaliczone';
@@ -266,6 +274,7 @@ function finishExam({ timeExpired = false } = {}) {
   resultDetails.innerHTML = `
     <div>Warunek części pierwszej: ${firstFourCorrect ? 'spełniony' : 'niespełniony'}.</div>
     <div>Błędy w części drugiej: ${restErrors} (dopuszczalny 1).</div>
+    <div>Łącznie błędów: ${totalErrors} (dopuszczalny 1).</div>
     ${timeExpired ? '<div>Limit czasu minął.</div>' : ''}
   `;
   resultDetails.appendChild(summaryList);
@@ -295,6 +304,7 @@ resetBtn.addEventListener('click', () => {
   stopTimer();
   questionPanel.hidden = true;
   resultEl.hidden = true;
+  document.body.classList.remove('is-testing');
   state.answers = {};
   state.currentIndex = 0;
   resetBtn.disabled = true;
@@ -309,12 +319,6 @@ modeInputs.forEach(input => {
 
 updateTimerVisibility();
 
-timeLimitSelect.addEventListener('change', () => {
-  if (getMode() === 'exam' && !state.timer.running) {
-    const minutes = Number(timeLimitSelect.value || 20);
-    setTimerDisplay(minutes * 60);
-  }
-});
 
 function loadQuestions() {
   if (Array.isArray(window.QUESTION_BANK)) {

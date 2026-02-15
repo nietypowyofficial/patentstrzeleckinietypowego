@@ -85,6 +85,17 @@ body {
   font-family: "Impact", "Avenir Next", sans-serif;
 }
 
+.hero__signature {
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.hero__signature span {
+  color: var(--accent);
+  letter-spacing: 0.08em;
+}
+
 .hero__lead {
   margin: 0 0 22px;
   color: var(--muted);
@@ -163,6 +174,11 @@ body {
   letter-spacing: 0.05em;
 }
 
+.timer--static {
+  background: rgba(212, 175, 55, 0.08);
+  color: var(--muted);
+}
+
 .rules {
   margin: 22px 0 18px;
   display: grid;
@@ -219,6 +235,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
@@ -226,6 +243,15 @@ body {
 .question__number {
   font-weight: 700;
   color: var(--accent-3);
+}
+
+.question__timer {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .tag {
@@ -396,6 +422,35 @@ body {
   display: none !important;
 }
 
+body.is-testing {
+  overflow: hidden;
+}
+
+body.is-testing .hero,
+body.is-testing .rules,
+body.is-testing .mode,
+body.is-testing .status {
+  display: none;
+}
+
+body.is-testing .page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+body.is-testing .exam {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+body.is-testing .question-panel {
+  flex: 1;
+  overflow: auto;
+}
+
 @media (max-width: 640px) {
   .hero {
     padding: 22px;
@@ -441,7 +496,8 @@ body {
     <header class="hero">
       <div class="hero__badge">Trening Strzelecki</div>
       <h1>Patent Strzelecki</h1>
-      <p class="hero__lead">10 pytań losowych. Pierwsze 4 z UoBiA + bezpieczeństwa muszą być bezbłędne.</p>
+      <div class="hero__signature">Projekt: <span>NIETYPOWY</span></div>
+      <p class="hero__lead">Test 10 pytań, 20 minut. Pierwsze 4 (UoBiA + bezpieczeństwo) bezbłędnie. W pozostałych 6 dopuszczalny 1 błąd.</p>
       <div class="hero__actions">
         <button id="startBtn" class="btn btn--primary" disabled>Losuj nowy test</button>
         <button id="resetBtn" class="btn btn--ghost" disabled>Wyczyść odpowiedzi</button>
@@ -463,13 +519,7 @@ body {
         </div>
         <div class="mode__timer" id="timerControls">
           <span>Czas:</span>
-          <select id="timeLimit">
-            <option value="10">10 min</option>
-            <option value="15">15 min</option>
-            <option value="20" selected>20 min</option>
-            <option value="25">25 min</option>
-            <option value="30">30 min</option>
-          </select>
+          <div class="timer timer--static">20 min</div>
           <div class="timer" id="timerDisplay" aria-live="polite">20:00</div>
         </div>
       </div>
@@ -478,15 +528,15 @@ body {
     <section class="rules" aria-label="Zasady">
       <div class="rule">
         <div class="rule__title">Zasady zaliczenia</div>
-        <div class="rule__text">Pierwsze 4 pytania (UoBiA + bezpieczeństwo) muszą być poprawne. W pozostałych 6 dopuszczalny jest 1 błąd.</div>
+        <div class="rule__text">Pytania 1-4 (UoBiA + bezpieczeństwo) bezbłędnie. Pytania 5-10: dopuszczalny 1 błąd. Łącznie tylko 1 błąd.</div>
       </div>
       <div class="rule">
         <div class="rule__title">Zakres</div>
-        <div class="rule__text">Ustawa o broni i amunicji, bezpieczeństwo, regulaminy sportowe, budowa broni i amunicji.</div>
+        <div class="rule__text">Ustawa o broni i amunicji, BLOS, regulaminy strzeleckie, budowa broni, przepisy karne dotyczące broni.</div>
       </div>
       <div class="rule">
-        <div class="rule__title">Tryb</div>
-        <div class="rule__text">Jednokrotny wybór. W jednym teście pytania nie mogą się powtarzać.</div>
+        <div class="rule__title">Forma</div>
+        <div class="rule__text">Test jednokrotnego wyboru (A/B/C). Czas: 20 minut.</div>
       </div>
     </section>
 
@@ -496,6 +546,7 @@ body {
       <section id="questionPanel" class="question-panel" hidden>
         <div class="question__meta">
           <div id="progress" class="question__number">Pytanie 1/10</div>
+          <div id="timerInline" class="question__timer">20:00</div>
         </div>
         <div id="questionText" class="question__text"></div>
         <div id="options" class="options"></div>
@@ -534,7 +585,7 @@ const state = {
   },
 };
 
-const RECENT_TESTS_LIMIT = 3;
+const RECENT_TESTS_LIMIT = 10;
 const RECENT_STORAGE_KEY = 'ps_recent_tests_v1';
 
 const startBtn = document.getElementById('startBtn');
@@ -551,8 +602,8 @@ const resultSummary = document.getElementById('resultSummary');
 const resultDetails = document.getElementById('resultDetails');
 const modeInputs = document.querySelectorAll('input[name="mode"]');
 const timerControls = document.getElementById('timerControls');
-const timeLimitSelect = document.getElementById('timeLimit');
 const timerDisplay = document.getElementById('timerDisplay');
+const timerInline = document.getElementById('timerInline');
 
 function getQuestionKey(q) {
   if (q && q.hash) return q.hash;
@@ -625,6 +676,7 @@ function updateTimerVisibility() {
   timerControls.style.pointerEvents = mode === 'exam' ? 'auto' : 'none';
   if (mode !== 'exam') {
     timerDisplay.textContent = 'bez limitu';
+    if (timerInline) timerInline.textContent = 'bez limitu';
   }
 }
 
@@ -635,7 +687,9 @@ function formatTime(seconds) {
 }
 
 function setTimerDisplay(seconds) {
-  timerDisplay.textContent = formatTime(Math.max(seconds, 0));
+  const text = formatTime(Math.max(seconds, 0));
+  timerDisplay.textContent = text;
+  if (timerInline) timerInline.textContent = text;
 }
 
 function stopTimer() {
@@ -652,9 +706,10 @@ function startTimer() {
   state.timer.mode = mode;
   if (mode !== 'exam') {
     timerDisplay.textContent = 'bez limitu';
+    if (timerInline) timerInline.textContent = 'bez limitu';
     return;
   }
-  const minutes = Number(timeLimitSelect.value || 20);
+  const minutes = 20;
   state.timer.remaining = minutes * 60;
   setTimerDisplay(state.timer.remaining);
   state.timer.running = true;
@@ -693,12 +748,13 @@ function renderCurrentQuestion() {
   questionTextEl.textContent = q.question;
   optionsEl.innerHTML = '';
 
+  const groupName = `current-${q.id || state.currentIndex}`;
   ['A', 'B', 'C'].forEach(letter => {
     const option = document.createElement('label');
     option.className = 'option';
     option.dataset.answer = letter;
     option.innerHTML = `
-      <input type="radio" name="current" value="${letter}" />
+      <input type="radio" name="${groupName}" value="${letter}" autocomplete="off" />
       <span class="option__label">${letter}</span>
       <span class="option__text">${q.answers[letter]}</span>
     `;
@@ -739,6 +795,7 @@ function startExam() {
   state.answers = {};
   state.currentIndex = 0;
 
+  document.body.classList.add('is-testing');
   questionPanel.hidden = false;
   resultEl.hidden = true;
   resetBtn.disabled = false;
@@ -751,6 +808,7 @@ function startExam() {
 function finishExam({ timeExpired = false } = {}) {
   stopTimer();
   questionPanel.hidden = true;
+  document.body.classList.remove('is-testing');
 
   const firstFour = state.selected.slice(0, 4);
   const rest = state.selected.slice(4);
@@ -760,6 +818,7 @@ function finishExam({ timeExpired = false } = {}) {
   const restCorrectCount = rest.filter(isCorrect).length;
   const restErrors = rest.length - restCorrectCount;
   const totalCorrect = state.selected.filter(isCorrect).length;
+  const totalErrors = state.selected.length - totalCorrect;
   const passed = firstFourCorrect && restErrors <= 1;
 
   resultTitle.textContent = passed ? 'Zaliczone' : 'Nie zaliczone';
@@ -789,6 +848,7 @@ function finishExam({ timeExpired = false } = {}) {
   resultDetails.innerHTML = `
     <div>Warunek części pierwszej: ${firstFourCorrect ? 'spełniony' : 'niespełniony'}.</div>
     <div>Błędy w części drugiej: ${restErrors} (dopuszczalny 1).</div>
+    <div>Łącznie błędów: ${totalErrors} (dopuszczalny 1).</div>
     ${timeExpired ? '<div>Limit czasu minął.</div>' : ''}
   `;
   resultDetails.appendChild(summaryList);
@@ -818,6 +878,7 @@ resetBtn.addEventListener('click', () => {
   stopTimer();
   questionPanel.hidden = true;
   resultEl.hidden = true;
+  document.body.classList.remove('is-testing');
   state.answers = {};
   state.currentIndex = 0;
   resetBtn.disabled = true;
@@ -832,12 +893,6 @@ modeInputs.forEach(input => {
 
 updateTimerVisibility();
 
-timeLimitSelect.addEventListener('change', () => {
-  if (getMode() === 'exam' && !state.timer.running) {
-    const minutes = Number(timeLimitSelect.value || 20);
-    setTimerDisplay(minutes * 60);
-  }
-});
 
 function loadQuestions() {
   if (Array.isArray(window.QUESTION_BANK)) {
